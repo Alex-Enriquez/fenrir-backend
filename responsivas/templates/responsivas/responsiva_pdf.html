@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+    @page {
+        size: letter;
+        margin: 2cm 1.5cm;
+    }
+    body {
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 9pt;
+        color: #1a1a1a;
+    }
+    .header {
+        width: 100%;
+    }
+    .header-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .header-table td {
+        vertical-align: top;
+        padding: 0;
+    }
+    .logo-text {
+        font-size: 20pt;
+        font-weight: bold;
+        color: #1a1a1a;
+    }
+    .logo-sub {
+        font-size: 9pt;
+        color: #555;
+    }
+    .address {
+        text-align: right;
+        font-size: 9pt;
+        color: #333;
+    }
+    .folio {
+        font-size: 13pt;
+        font-weight: bold;
+        margin-top: 18px;
+    }
+    .meta {
+        font-size: 9pt;
+        color: #333;
+        margin-top: 4px;
+    }
+    .legal {
+        margin-top: 14px;
+        text-align: justify;
+        line-height: 1.35;
+        font-size: 8.5pt;
+        color: #222;
+    }
+    .legal p {
+        margin: 0 0 8px 0;
+    }
+    .firmas {
+        width: 100%;
+        margin-top: 26px;
+    }
+    .firmas-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .firma-box {
+        width: 48%;
+        border-top: 1px solid #333;
+        padding-top: 4px;
+        text-align: center;
+        font-size: 8pt;
+        color: #333;
+    }
+    .firmas-table td {
+        padding-top: 60px;
+    }
+    .tabla-items {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 24px;
+        font-size: 8pt;
+    }
+    .tabla-items th {
+        background-color: #f0f0f0;
+        border: 1px solid #999;
+        padding: 5px;
+        text-align: left;
+        font-size: 7.5pt;
+        text-transform: uppercase;
+    }
+    .tabla-items td {
+        border: 1px solid #999;
+        padding: 5px;
+        vertical-align: top;
+    }
+    .footer {
+        margin-top: 30px;
+        font-size: 8pt;
+        color: #555;
+    }
+</style>
+</head>
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td style="width: 55%;">
+                <div class="logo-text">ALAMEX</div>
+                <div class="logo-sub">Elevadores</div>
+            </td>
+            <td class="address">
+                219 Av. Tlahuac<br>
+                CDMX CMX 09840<br>
+                Mexico
+            </td>
+        </tr>
+    </table>
+
+    <div class="folio">{{ responsiva.folio }}</div>
+    <div class="meta">
+        Empleado: {{ responsiva.empleado.nombre_completo }} — {{ responsiva.empleado.puesto }}<br>
+        Departamento: {{ responsiva.empleado.departamento.nombre }}<br>
+        Fecha: {{ responsiva.fecha|date:"d/m/Y" }}
+    </div>
+
+    <div class="legal">
+        <p>EL TRABAJADOR acepta y reconoce que todos los equipos, herramientas de trabajo, softwares, equipos de telefonía celular, computadoras, tablets, laptops, USB, dispositivos de almacenamiento físico o digital; y/o cualquier equipo electrónico para el uso y/o almacenamiento de información proporcionado por la empresa; correos electrónicos, usuarios, contraseñas, servicios de mensajería digital; así como la información, base de datos, listados, contactos, mensajes de texto, imágenes, correos, documentos y/o cualquier tipo de información contenidos en éstos; son propiedad única y exclusiva de la empresa DOPPLER ELEVADORES; por lo que la empresa puede utilizar, acceder, cambiar, modificar, transmitir, ceder, restringir, enajenar y hacer cualquier tipo de uso, respecto de la información contenida en ellos, sin importar el soporte material en que se encuentre. Sin que tal acción se considere violación a la confidencialidad de las comunicaciones, ya que son herramientas de trabajo proporcionadas por la empresa, para el cumplimiento de las labores encomendadas al trabajador.</p>
+
+        <p>Aceptando el trabajador de forma expresa, que los equipos y/o herramientas proporcionadas por la empresa, son intransferibles y no pueden usarse para fines personales; y estarán destinados única y exclusivamente al cumplimiento de las funciones o trabajos encomendados por el patrón. DOPPLER ELEVADORES podrá en todo momento acceder libremente a las cuentas, equipos, archivos, bases de datos, mensajes de texto, correos electrónicos; y hacer uso de la información en éstos contenidos.</p>
+
+        <p>De igual forma acepta y reconoce el trabajador que no tiene ningún derecho de propiedad y/o posesión sobre la información, base de datos, softwares, equipos de telefonía celular, computadoras, claves, usuarios, cuentas de correos electrónicos, tabletas, laptops; USB, dispositivos de almacenamiento físico o digital; y/o cualquier equipo electrónico para el uso y/o almacenamiento de información proporcionado por la empresa; así como la información, base de datos, listados, contactos, mensajes de texto, imágenes, correos, documentos y/o cualquier tipo de información contenidos en éstos. Los cuales son propiedad única y exclusiva de DOPPLER ELEVADORES. Por lo que el trabajador acepta y muestra su entera conformidad en que no puede usar, esconder, compartir, transmitir, bloquear, limitar, borrar y/o generar copias de la información y documentos; en beneficio propio o de terceros y/o en perjuicio de la empresa. Respondiendo de los daños y perjuicios generados a la empresa, por el incumplimiento a estas obligaciones.</p>
+    </div>
+
+    <table class="firmas-table">
+        <tr>
+            <td style="width: 50%;">
+                <div class="firma-box">{{ responsiva.quien_entrega }}<br>Nombre completo y firma de quien entrega</div>
+            </td>
+            <td style="width: 4%;"></td>
+            <td style="width: 46%;">
+                <div class="firma-box">{{ responsiva.empleado.nombre_completo }}<br>Nombre completo y firma de enterado de quien recibe</div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="tabla-items">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Número de serie / inventario</th>
+                <th>Para</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>[{{ item.equipo.categoria.nombre }}] {{ item.equipo.marca }} {{ item.equipo.modelo }}</td>
+                <td>{{ item.cantidad }}.00 Unidades</td>
+                <td>{{ item.equipo.numero_serie|default:item.equipo.numero_inventario }}</td>
+                <td>{{ responsiva.empleado.nombre_completo }} — {{ responsiva.empleado.puesto }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Gracias por confiar en Alamex — 219 Av. Tlahuac, CDMX CMX 09840, Mexico
+    </div>
+
+</body>
+</html>

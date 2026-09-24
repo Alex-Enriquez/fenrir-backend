@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: inventario_ti_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inventario_ti
+      POSTGRES_USER: inventario_user
+      POSTGRES_PASSWORD: CONTRASENA_ELIMINADA
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

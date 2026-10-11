@@ -1,3 +1,6 @@
+import base64
+from pathlib import Path
+from django.conf import settings
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from rest_framework import viewsets
@@ -35,9 +38,13 @@ class ResponsivaViewSet(viewsets.ModelViewSet):
         responsiva = self.get_object()
         items = responsiva.items.all()
 
+        ruta_logo = Path(settings.BASE_DIR) / "alamex_logo.png"
+        logo_base64 = base64.b64encode(ruta_logo.read_bytes()).decode() if ruta_logo.exists() else ""
+
         html = render_to_string("responsivas/responsiva_pdf.html", {
             "responsiva": responsiva,
             "items": items,
+            "logo_base64": logo_base64,
         })
 
         response = HttpResponse(content_type="application/pdf")

@@ -107,8 +107,8 @@
     <table class="header-table">
         <tr>
             <td style="width: 55%;">
-                <div class="logo-text">ALAMEX</div>
-                <div class="logo-sub">Elevadores</div>
+                {% if logo_base64 %}<img src="data:image/png;base64,{{ logo_base64 }}" style="height: 50px;" />{% else %}<div class="logo-text">ALAMEX</div>{% endif %}
+                <div class="logo-sub" style="margin-top: 4px;">Elevadores</div>
             </td>
             <td class="address">
                 219 Av. Tlahuac<br>

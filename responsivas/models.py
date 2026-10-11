@@ -3,11 +3,32 @@ from empleados.models import Empleado
 from equipos.models import Equipo
 
 TECNICOS = [
-    ("Irving González", "Irving González"),
-    ("Sammer", "Sammer"),
+    ("Irving Sammer González", "Irving Sammer González"),
     ("Alexis Acosta", "Alexis Acosta"),
     ("Celia Hernández", "Celia Hernández"),
 ]
+
+
+class ContadorResponsiva(models.Model):
+    valor = models.PositiveIntegerField(default=0)
+
+    @classmethod
+    def siguiente(cls):
+        contador, _ = cls.objects.get_or_create(pk=1)
+        while True:
+            contador.valor += 1
+            # si ese folio ya existe (responsivas creadas con la lógica anterior), se salta
+            if not Responsiva.objects.filter(folio=f"ALX-RESP-{contador.valor:05d}").exists():
+                break
+        contador.save()
+        return contador.valor
+
+    @classmethod
+    def liberar_si_es_el_ultimo(cls, numero):
+        contador, _ = cls.objects.get_or_create(pk=1)
+        if contador.valor == numero:
+            contador.valor -= 1
+            contador.save()
 
 
 class Responsiva(models.Model):
@@ -19,10 +40,19 @@ class Responsiva(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.folio:
-            ultimo = Responsiva.objects.order_by("-id").first()
-            siguiente = (ultimo.id + 1) if ultimo else 1
-            self.folio = f"ALX-RESP-{siguiente:05d}"
+            numero = ContadorResponsiva.siguiente()
+            self.folio = f"ALX-RESP-{numero:05d}"
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        try:
+            numero = int(self.folio.split("-")[-1])
+        except (ValueError, AttributeError):
+            numero = None
+        resultado = super().delete(*args, **kwargs)
+        if numero is not None:
+            ContadorResponsiva.liberar_si_es_el_ultimo(numero)
+        return resultado
 
     def __str__(self):
         return f"{self.folio} - {self.empleado}"

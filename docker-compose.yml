@@ -6,9 +6,9 @@ services:
     environment:
       POSTGRES_DB: inventario_ti
       POSTGRES_USER: inventario_user
-      POSTGRES_PASSWORD: CONTRASENA_ELIMINADA
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

@@ -12,5 +12,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  backup:
+    image: postgres:16   # la misma versión que "db": si cambias una, cambia la otra
+    container_name: inventario_ti_backup
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PGHOST: db
+      PGUSER: inventario_user
+      PGDATABASE: inventario_ti
+      PGPASSWORD: ${DB_PASSWORD}
+      TZ: ${TZ:-America/Mexico_City}
+    volumes:
+      - ./respaldo/respaldar.sh:/respaldar.sh:ro,z
+      - ${BACKUP_DIR:-../respaldos-fenrir}:/respaldos:z
+    entrypoint: ["/bin/bash", "/respaldar.sh"]
+
 volumes:
   postgres_data:

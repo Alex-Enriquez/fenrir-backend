@@ -29,9 +29,14 @@ from .serializers import (
 )
 
 
-class CategoriaEquipoViewSet(viewsets.ModelViewSet):
+from .catalogos import CatalogoViewSetMixin
+
+
+class CategoriaEquipoViewSet(CatalogoViewSetMixin, viewsets.ModelViewSet):
     queryset = CategoriaEquipo.objects.all()
     serializer_class = CategoriaEquipoSerializer
+    relacion_uso = "equipos"
+    etiqueta_uso = ("equipo", "equipos")
 
 
 class EquipoViewSet(viewsets.ModelViewSet):
@@ -151,9 +156,11 @@ class MantenimientoViewSet(viewsets.ModelViewSet):
         return generar_excel("mantenimientos.xlsx", encabezados, filas)
 
 
-class DepartamentoViewSet(viewsets.ModelViewSet):
+class DepartamentoViewSet(CatalogoViewSetMixin, viewsets.ModelViewSet):
     queryset = Departamento.objects.all()
     serializer_class = DepartamentoSerializer
+    relacion_uso = "empleados"
+    etiqueta_uso = ("empleado", "empleados")
 
 
 class EmpleadoViewSet(viewsets.ModelViewSet):
@@ -176,9 +183,11 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
         return generar_excel("empleados.xlsx", encabezados, filas)
 
 
-class TipoLicenciaViewSet(viewsets.ModelViewSet):
+class TipoLicenciaViewSet(CatalogoViewSetMixin, viewsets.ModelViewSet):
     queryset = TipoLicencia.objects.all()
     serializer_class = TipoLicenciaSerializer
+    relacion_uso = "licencias"
+    etiqueta_uso = ("licencia", "licencias")
 
 
 class LicenciaViewSet(viewsets.ModelViewSet):
@@ -221,10 +230,12 @@ class AsignacionViewSet(viewsets.ModelViewSet):
         ]
         return generar_excel("asignaciones.xlsx", encabezados, filas)
 
-class CategoriaContrasenaViewSet(viewsets.ModelViewSet):
+class CategoriaContrasenaViewSet(CatalogoViewSetMixin, viewsets.ModelViewSet):
     queryset = CategoriaContrasena.objects.all()
     serializer_class = CategoriaContrasenaSerializer
     permission_classes = [IsAdminUser]
+    relacion_uso = "registros"
+    etiqueta_uso = ("contraseña", "contraseñas")
 
 class RegistroContrasenaViewSet(viewsets.ModelViewSet):
     queryset = RegistroContrasena.objects.all()

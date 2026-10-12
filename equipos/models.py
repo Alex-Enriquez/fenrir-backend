@@ -20,8 +20,9 @@ class Equipo(models.Model):
     categoria = models.ForeignKey(CategoriaEquipo, on_delete=models.PROTECT, related_name="equipos")
     marca = models.CharField(max_length=100)
     modelo = models.CharField(max_length=100)
-    numero_serie = models.CharField(max_length=100, unique=True)
+    numero_serie = models.CharField(max_length=100, unique=True, blank=True, null=True)
     numero_inventario = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    imei = models.CharField("IMEI", max_length=20, unique=True, blank=True, null=True)
 
     procesador = models.CharField(max_length=150, blank=True)
     memoria_ram = models.CharField(max_length=50, blank=True)
@@ -50,7 +51,8 @@ class Equipo(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.marca} {self.modelo} ({self.numero_serie})"
+        identificador = self.numero_serie or self.imei or self.numero_inventario or "sin serie"
+        return f"{self.marca} {self.modelo} ({identificador})"
 
 
 class Mantenimiento(models.Model):

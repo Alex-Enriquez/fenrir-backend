@@ -11,7 +11,7 @@ class CategoriaEquipoAdmin(admin.ModelAdmin):
 class EquipoAdmin(admin.ModelAdmin):
     list_display = ("marca", "modelo", "numero_serie", "categoria", "estado", "ubicacion")
     list_filter = ("estado", "categoria", "disco_tipo")
-    search_fields = ("marca", "modelo", "numero_serie", "numero_inventario")
+    search_fields = ("marca", "modelo", "numero_serie", "numero_inventario", "imei")
 
 
 @admin.register(Mantenimiento)

@@ -18,9 +18,36 @@ class CategoriaEquipoSerializer(serializers.ModelSerializer):
 class EquipoSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.CharField(source="categoria.nombre", read_only=True)
 
+    # Serie, inventario e IMEI son opcionales pero únicos cuando traen valor: lo vacío se guarda como NULL
+    # (así varios equipos pueden quedar sin serie) y hacia el frontend se sigue mostrando como "".
+    CAMPOS_OPCIONALES = ("numero_serie", "numero_inventario", "imei")
+
     class Meta:
         model = Equipo
         fields = "__all__"
+
+    @staticmethod
+    def _vacio_a_none(valor):
+        if valor is None:
+            return None
+        valor = str(valor).strip()
+        return valor or None
+
+    def validate_numero_serie(self, valor):
+        return self._vacio_a_none(valor)
+
+    def validate_numero_inventario(self, valor):
+        return self._vacio_a_none(valor)
+
+    def validate_imei(self, valor):
+        return self._vacio_a_none(valor)
+
+    def to_representation(self, instance):
+        datos = super().to_representation(instance)
+        for campo in self.CAMPOS_OPCIONALES:
+            if datos.get(campo) is None:
+                datos[campo] = ""
+        return datos
 
 
 class MantenimientoSerializer(serializers.ModelSerializer):

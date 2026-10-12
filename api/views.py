@@ -44,14 +44,14 @@ class EquipoViewSet(viewsets.ModelViewSet):
         encabezados = [
             "Categoría", "Marca", "Modelo", "N° Serie", "N° Inventario",
             "Procesador", "RAM", "Disco tipo", "Disco capacidad",
-            "Estado", "Ubicación",
+            "Estado", "Ubicación", "IMEI",
         ]
         filas = [
             [
                 eq.categoria.nombre if eq.categoria else "",
-                eq.marca, eq.modelo, eq.numero_serie, eq.numero_inventario or "",
+                eq.marca, eq.modelo, eq.numero_serie or "", eq.numero_inventario or "",
                 eq.procesador, eq.memoria_ram, eq.disco_tipo, eq.disco_capacidad,
-                eq.estado, eq.ubicacion,
+                eq.estado, eq.ubicacion, eq.imei or "",
             ]
             for eq in equipos
         ]
@@ -61,12 +61,12 @@ class EquipoViewSet(viewsets.ModelViewSet):
     def plantilla(self, request):
         encabezados = [
             "Categoria", "Marca", "Modelo", "Numero Serie", "Numero Inventario",
-            "Procesador", "RAM", "Disco Tipo", "Disco Capacidad", "Estado", "Ubicacion",
+            "Procesador", "RAM", "Disco Tipo", "Disco Capacidad", "Estado", "Ubicacion", "IMEI",
         ]
         fila_ejemplo = [
             "Laptop", "Dell", "Latitude 5420", "ABC123", "ALX-0001",
             "Intel Core i5-1135G7", "8GB DDR4 SO-DIMM", "SSD", "256 GB",
-            "disponible", "Oficina TI",
+            "disponible", "Oficina TI", "",
         ]
         return generar_excel("plantilla_equipos.xlsx", encabezados, [fila_ejemplo])
 
@@ -86,14 +86,16 @@ class EquipoViewSet(viewsets.ModelViewSet):
         creados = 0
         errores = []
 
-        filas = list(ws.iter_rows(min_row=2, values_only=True))
-        for i, fila in enumerate(filas, start=2):
+        from .utils_importacion import fila_de_encabezados, texto_celda
+        primera = fila_de_encabezados(ws) + 1   # los datos empiezan debajo de los encabezados (con logo, en la fila 4)
+        filas = list(ws.iter_rows(min_row=primera, values_only=True))
+        for i, fila in enumerate(filas, start=primera):
             if not fila or all(c is None for c in fila):
                 continue
             try:
-                datos = (list(fila) + [None] * 11)[:11]
+                datos = (list(fila) + [None] * 12)[:12]
                 (categoria_nombre, marca, modelo, numero_serie, numero_inventario,
-                 procesador, ram, disco_tipo, disco_capacidad, estado, ubicacion) = datos
+                 procesador, ram, disco_tipo, disco_capacidad, estado, ubicacion, imei) = datos
 
                 if not categoria_nombre:
                     errores.append(f"Fila {i}: falta la categoría.")
@@ -112,8 +114,9 @@ class EquipoViewSet(viewsets.ModelViewSet):
                     categoria=categoria,
                     marca=str(marca).strip(),
                     modelo=str(modelo).strip(),
-                    numero_serie=str(numero_serie).strip() if numero_serie else "",
-                    numero_inventario=str(numero_inventario).strip() if numero_inventario else None,
+                    numero_serie=texto_celda(numero_serie) or None,
+                    numero_inventario=texto_celda(numero_inventario) or None,
+                    imei=texto_celda(imei) or None,
                     procesador=str(procesador).strip() if procesador else "",
                     memoria_ram=str(ram).strip() if ram else "",
                     disco_tipo=str(disco_tipo).strip() if disco_tipo else "",

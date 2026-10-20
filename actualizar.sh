@@ -190,10 +190,12 @@ main() {
   MARCA="$(date +%Y%m%d_%H%M%S)"; DESTINO="$resp/antes-de-actualizar"
   mkdir -p "$DESTINO" || { alto "No pude crear $DESTINO. No modifiqué nada."; return 1; }
   local archivo="$DESTINO/fenrir_$MARCA.sql.gz"
-  ( set -o pipefail; $DOCKER exec "$BD_CONTENEDOR" sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$archivo" ) \
+  # Mismas opciones que el respaldo automático: así se puede restaurar ENCIMA de la base de datos actual.
+  ( set -o pipefail; $DOCKER exec "$BD_CONTENEDOR" sh -c 'pg_dump --clean --if-exists --no-owner --no-privileges -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$archivo" ) \
     && gzip -t "$archivo" && [ "$(wc -c < "$archivo")" -gt 1000 ] \
-    || { rm -f "$archivo"; alto "El respaldo falló. No modifiqué nada."; return 1; }
-  ok "Respaldo guardado: $archivo ($(du -h "$archivo" | cut -f1))"
+    && gunzip -c "$archivo" | tail -n 5 | grep -q 'PostgreSQL database dump complete' \
+    || { rm -f "$archivo"; alto "El respaldo falló o quedó incompleto. No modifiqué nada."; return 1; }
+  ok "Respaldo guardado y verificado: $archivo ($(du -h "$archivo" | cut -f1))"
 
   paso "Trayendo el código nuevo"
   actualizar_repo "$BACKEND" "$rb" || { alto "No pude actualizar el backend."; return 1; }

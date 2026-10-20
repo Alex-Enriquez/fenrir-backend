@@ -31,3 +31,7 @@ class Empleado(models.Model):
 
     def __str__(self):
         return f"{self.nombre_completo} ({self.correo})"
+
+
+# Directorio telefónico (el modelo vive en su propio archivo)
+from .lineas import LineaTelefonica  # noqa: E402,F401

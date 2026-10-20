@@ -9,6 +9,7 @@ from .views import (
     RackViewSet, DispositivoRedViewSet, PuertoRedViewSet,
 )
 from responsivas.views import ResponsivaViewSet
+from .directorio import LineaTelefonicaViewSet
 
 router = DefaultRouter()
 router.register(r"categorias-equipo", CategoriaEquipoViewSet)
@@ -28,5 +29,6 @@ router.register(r"servicios-contratados", ServicioContratadoViewSet)
 router.register(r"racks", RackViewSet)
 router.register(r"dispositivos-red", DispositivoRedViewSet)
 router.register(r"puertos-red", PuertoRedViewSet)
+router.register(r"directorio", LineaTelefonicaViewSet)
 
 urlpatterns = router.urls

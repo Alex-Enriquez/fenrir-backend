@@ -19,6 +19,11 @@ class ResponsivaSerializer(serializers.ModelSerializer):
         fields = ["id", "folio", "empleado", "empleado_nombre", "fecha", "quien_entrega", "observaciones", "items"]
         read_only_fields = ["folio", "fecha"]
 
+    def validate_items(self, valor):
+        if not valor:
+            raise serializers.ValidationError("La responsiva debe incluir al menos un equipo.")
+        return valor
+
     def create(self, validated_data):
         items_data = validated_data.pop("items")
         responsiva = Responsiva.objects.create(**validated_data)

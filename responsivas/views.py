@@ -1,6 +1,7 @@
 import base64
 from pathlib import Path
 from django.conf import settings
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from rest_framework import viewsets
@@ -18,7 +19,9 @@ class ResponsivaViewSet(viewsets.ModelViewSet):
     serializer_class = ResponsivaSerializer
     permission_classes = [IsAdminUser]
 
+    @transaction.atomic
     def perform_create(self, serializer):
+        # Todo o nada: la responsiva, su folio y el cambio de asignaciones se guardan juntos.
         responsiva = serializer.save()
 
         # Sincroniza Asignaciones: cada equipo incluido queda asignado a este empleado

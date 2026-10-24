@@ -18,7 +18,7 @@ def actualizar_estado_equipo_al_guardar(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=Asignacion)
 def liberar_equipo_al_eliminar(sender, instance, **kwargs):
-    equipo = instance.equipo
-    if equipo and not instance.fecha_devolucion:
-        equipo.estado = 'disponible'
-        equipo.save(update_fields=['estado'])
+    # No se lee instance.equipo: si lo que se está eliminando es el equipo mismo (con sus asignaciones), esa fila ya no
+    # existe y leerla fallaba con DoesNotExist. Se escribe directo; si el equipo ya no existe, simplemente no hay nada que liberar.
+    if instance.equipo_id and not instance.fecha_devolucion:
+        Equipo.objects.filter(pk=instance.equipo_id).update(estado='disponible')

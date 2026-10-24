@@ -30,6 +30,7 @@ from .serializers import (
 
 
 from .catalogos import CatalogoViewSetMixin
+from .borrado import BorradoProtegidoMixin
 
 
 class CategoriaEquipoViewSet(CatalogoViewSetMixin, viewsets.ModelViewSet):
@@ -39,9 +40,11 @@ class CategoriaEquipoViewSet(CatalogoViewSetMixin, viewsets.ModelViewSet):
     etiqueta_uso = ("equipo", "equipos")
 
 
-class EquipoViewSet(viewsets.ModelViewSet):
+class EquipoViewSet(BorradoProtegidoMixin, viewsets.ModelViewSet):
     queryset = Equipo.objects.all()
     serializer_class = EquipoSerializer
+    verbo_borrado = "aparece en"
+    sugerencia_borrado = "Elimina primero esas responsivas; si solo dejó de usarse, márcalo como «De baja»."
 
     @action(detail=False, methods=["get"])
     def exportar(self, request):
@@ -163,9 +166,11 @@ class DepartamentoViewSet(CatalogoViewSetMixin, viewsets.ModelViewSet):
     etiqueta_uso = ("empleado", "empleados")
 
 
-class EmpleadoViewSet(viewsets.ModelViewSet):
+class EmpleadoViewSet(BorradoProtegidoMixin, viewsets.ModelViewSet):
     queryset = Empleado.objects.all()
     serializer_class = EmpleadoSerializer
+    verbo_borrado = "tiene"
+    sugerencia_borrado = "Elimina primero esas responsivas; si dejó la empresa, márcalo como «Baja» en su ficha."
 
     @action(detail=False, methods=["get"])
     def exportar(self, request):

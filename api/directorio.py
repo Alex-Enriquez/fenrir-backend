@@ -48,7 +48,7 @@ class LineaTelefonicaSerializer(serializers.ModelSerializer):
     nombre = serializers.CharField(max_length=150, required=False, allow_blank=True)
     tipo_nombre = serializers.CharField(source="get_tipo_display", read_only=True)
     empleado_nombre = serializers.CharField(source="empleado.nombre_completo", read_only=True, default=None)
-    equipo_nombre = serializers.CharField(source="equipo.__str__", read_only=True, default=None)
+    equipo_nombre = serializers.SerializerMethodField()
     departamento_nombre = serializers.SerializerMethodField()
     # Sin la validación automática de unicidad de DRF (compara lo que se escribió, antes de limpiarlo, y en inglés):
     # el chip y el número se comprueban abajo, ya limpios y con un mensaje claro.
@@ -61,6 +61,10 @@ class LineaTelefonicaSerializer(serializers.ModelSerializer):
 
     def get_departamento_nombre(self, obj):
         return departamento_de(obj)
+
+    def get_equipo_nombre(self, obj):
+        # Con source="equipo.__str__" una línea sin equipo mostraba el texto interno de None.__str__
+        return str(obj.equipo) if obj.equipo else None
 
     def validate_chip(self, valor):
         valor = re.sub(r"\s+", "", str(valor or ""))

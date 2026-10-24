@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .seguridad import ReglaDeNegocio, mensaje_password_invalida
 from equipos.models import CategoriaEquipo, Equipo, Mantenimiento
 from empleados.models import Departamento, Empleado
 from licencias.models import TipoLicencia, Licencia
@@ -87,12 +88,54 @@ class LicenciaSerializer(serializers.ModelSerializer):
 
 class AsignacionSerializer(serializers.ModelSerializer):
     empleado_nombre = serializers.CharField(source="empleado.nombre_completo", read_only=True)
-    equipo_nombre = serializers.CharField(source="equipo.__str__", read_only=True)
-    licencia_nombre = serializers.CharField(source="licencia.__str__", read_only=True)
+    equipo_nombre = serializers.SerializerMethodField()
+    licencia_nombre = serializers.SerializerMethodField()
 
     class Meta:
         model = Asignacion
         fields = "__all__"
+
+    # Con source="equipo.__str__", una asignación sin equipo (o sin licencia) mostraba el texto interno de None.__str__
+    def get_equipo_nombre(self, obj):
+        return str(obj.equipo) if obj.equipo else None
+
+    def get_licencia_nombre(self, obj):
+        return str(obj.licencia) if obj.licencia else None
+
+    def validate(self, datos):
+        actual = self.instance
+
+        def valor(campo):
+            if campo in datos:
+                return datos[campo]
+            return getattr(actual, campo, None) if actual else None
+
+        empleado, equipo, licencia = valor("empleado"), valor("equipo"), valor("licencia")
+        if equipo is None and licencia is None:
+            raise ReglaDeNegocio("La asignación debe incluir un equipo o una licencia.")
+        if valor("fecha_devolucion") is not None:
+            return datos  # una asignación devuelta ya no ocupa nada
+
+        # Solo se revisa si es nueva, si cambia de persona, equipo o licencia, o si se vuelve a abrir una devuelta.
+        if actual is not None and actual.fecha_devolucion is None and all(valor(c) == getattr(actual, c) for c in ("empleado", "equipo", "licencia")):
+            return datos
+
+        otras = Asignacion.objects.filter(fecha_devolucion__isnull=True)
+        if actual is not None:
+            otras = otras.exclude(pk=actual.pk)
+        if equipo is not None:
+            ocupante = otras.filter(equipo=equipo).select_related("empleado").first()
+            if ocupante is not None:
+                raise ReglaDeNegocio(f"El equipo «{equipo}» ya está asignado a {ocupante.empleado.nombre_completo}. Devuélvelo o reasígnalo primero.")
+            if (actual is None or actual.equipo_id != equipo.pk) and equipo.estado != "disponible":
+                raise ReglaDeNegocio(f"El equipo «{equipo}» está en estado «{equipo.get_estado_display()}»: solo se pueden asignar equipos disponibles.")
+        if licencia is not None:
+            de_la_licencia = otras.filter(licencia=licencia)
+            if de_la_licencia.filter(empleado=empleado).exists():
+                raise ReglaDeNegocio(f"{empleado.nombre_completo} ya tiene la licencia «{licencia}» asignada.")
+            if licencia.asientos_totales and de_la_licencia.count() >= licencia.asientos_totales:
+                raise ReglaDeNegocio(f"La licencia «{licencia}» no tiene asientos libres ({de_la_licencia.count()} de {licencia.asientos_totales} en uso).")
+        return datos
 
 
 class CategoriaContrasenaSerializer(serializers.ModelSerializer):
@@ -118,6 +161,12 @@ class UsuarioSistemaSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email", "is_staff", "is_active", "date_joined", "password"]
         read_only_fields = ["date_joined"]
 
+    def validate_password(self, valor):
+        problema = mensaje_password_invalida(valor)
+        if problema:
+            raise serializers.ValidationError(problema)
+        return valor
+
     def create(self, validated_data):
         password = validated_data.pop("password", None)
         user = User(**validated_data)
@@ -126,10 +175,24 @@ class UsuarioSistemaSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+    def update(self, instance, validated_data):
+        # Sin esto, la contraseña nueva se guardaba tal cual (texto plano) y el usuario no podía volver a entrar.
+        password = validated_data.pop("password", None)
+        user = super().update(instance, validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
+
 class ProveedorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proveedor
         fields = "__all__"
+
+    def validate_calificacion(self, valor):
+        if valor is not None and not 0 <= valor <= 5:
+            raise serializers.ValidationError("La calificación va de 0 a 5 estrellas.")
+        return valor
 
 class PagoServicioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -162,3 +225,28 @@ class DispositivoRedSerializer(serializers.ModelSerializer):
     class Meta:
         model = DispositivoRed
         fields = "__all__"
+
+    def validate(self, datos):
+        actual = self.instance
+
+        def valor(campo, defecto=None):
+            if campo in datos:
+                return datos[campo]
+            return getattr(actual, campo, defecto) if actual else defecto
+
+        rack, pos, alto = valor("rack"), valor("posicion_u"), valor("altura_u", 1) or 1
+        if rack is None or not pos:
+            return datos
+        if actual is not None and all(valor(c) == getattr(actual, c) for c in ("rack", "posicion_u", "altura_u")):
+            return datos  # no se movió: no se vuelve a revisar
+        fin = pos + alto - 1  # un dispositivo ocupa de posicion_u a posicion_u + altura_u - 1 (así lo dibuja el rack)
+        if rack.altura_u and fin > rack.altura_u:
+            raise ReglaDeNegocio(f"No cabe: el rack «{rack.nombre}» tiene {rack.altura_u} U y este dispositivo llegaría hasta la U{fin}.")
+        vecinos = DispositivoRed.objects.filter(rack=rack, posicion_u__isnull=False)
+        if actual is not None:
+            vecinos = vecinos.exclude(pk=actual.pk)
+        for otro in vecinos:
+            otro_fin = otro.posicion_u + (otro.altura_u or 1) - 1
+            if pos <= otro_fin and otro.posicion_u <= fin:
+                raise ReglaDeNegocio(f"La posición ya está ocupada por «{otro.nombre}» (U{otro.posicion_u} a U{otro_fin}).")
+        return datos

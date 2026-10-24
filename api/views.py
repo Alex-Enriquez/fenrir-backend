@@ -9,6 +9,7 @@ from proveedores.models import Proveedor
 from servicios.models import ServicioContratado, PagoServicio
 from infraestructura.models import Rack, DispositivoRed, PuertoRed
 import calendar
+from decimal import Decimal, InvalidOperation
 from datetime import date
 import secrets
 import string
@@ -30,6 +31,7 @@ from .serializers import (
 
 
 from .catalogos import CatalogoViewSetMixin
+from .seguridad import ReglaDeNegocio, mensaje_password_invalida
 from .borrado import BorradoProtegidoMixin
 
 
@@ -258,6 +260,28 @@ class UsuarioSistemaViewSet(viewsets.ModelViewSet):
     serializer_class = UsuarioSistemaSerializer
     permission_classes = [IsAdminUser]
 
+    @staticmethod
+    def _es_ultimo_administrador(usuario):
+        return usuario.is_staff and usuario.is_active and not User.objects.filter(is_staff=True, is_active=True).exclude(pk=usuario.pk).exists()
+
+    def destroy(self, request, *args, **kwargs):
+        usuario = self.get_object()
+        if usuario.pk == request.user.pk:
+            return Response({"detail": "No puedes eliminar tu propia cuenta."}, status=409)
+        if self._es_ultimo_administrador(usuario):
+            return Response({"detail": "Es el único administrador activo: si se elimina, el sistema se queda sin administración."}, status=409)
+        return super().destroy(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        usuario, datos = serializer.instance, serializer.validated_data
+        pierde_rol = usuario.is_staff and datos.get("is_staff", usuario.is_staff) is False
+        se_desactiva = usuario.is_active and datos.get("is_active", usuario.is_active) is False
+        if usuario.pk == self.request.user.pk and (pierde_rol or se_desactiva):
+            raise ReglaDeNegocio("No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.")
+        if (pierde_rol or se_desactiva) and self._es_ultimo_administrador(usuario):
+            raise ReglaDeNegocio("Es el único administrador activo: no se le puede quitar el rol ni desactivar.")
+        serializer.save()
+
     @action(detail=True, methods=["post"])
     def reset_password(self, request, pk=None):
         user = self.get_object()
@@ -267,6 +291,9 @@ class UsuarioSistemaViewSet(viewsets.ModelViewSet):
             nueva_password = request.data.get("password", "")
             if not nueva_password:
                 return Response({"error": "Debes escribir una contraseña."}, status=400)
+            problema = mensaje_password_invalida(nueva_password)
+            if problema:
+                return Response({"error": problema}, status=400)
         else:
             nueva_password = generar_password_automatica()
 
@@ -308,7 +335,12 @@ class ServicioContratadoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def marcar_pago(self, request, pk=None):
         servicio = self.get_object()
-        monto = request.data.get("monto", servicio.costo)
+        try:
+            monto = Decimal(str(request.data.get("monto", servicio.costo))).quantize(Decimal("0.01"))
+            if monto < 0 or monto >= Decimal("100000000"):
+                raise InvalidOperation
+        except (InvalidOperation, ValueError, TypeError):
+            return Response({"error": "El monto debe ser un número válido, por ejemplo 1500.00."}, status=400)
 
         PagoServicio.objects.create(servicio=servicio, monto=monto)
 

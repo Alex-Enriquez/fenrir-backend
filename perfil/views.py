@@ -8,6 +8,7 @@ from django.core.cache import cache
 import re
 from .models import Perfil
 from .serializers import PerfilSerializer
+from api.seguridad import mensaje_password_invalida
 
 MAX_INTENTOS = 5
 BLOQUEO_SEGUNDOS = 15 * 60
@@ -28,6 +29,10 @@ class MiPerfilView(APIView):
         perfil, _ = Perfil.objects.get_or_create(user=request.user)
         data = dict(request.data)
         nueva_password = data.pop("nueva_password", None)
+        if nueva_password:
+            problema = mensaje_password_invalida(nueva_password)
+            if problema:
+                return Response({"error": problema}, status=400)
 
         serializer = PerfilSerializer(perfil, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -64,10 +69,10 @@ class RegistroView(APIView):
         if len(password) < 8 or not re.search(r"[A-Z]", password) or not re.search(r"[0-9]", password):
             return Response({"error": "La contraseña debe tener 8+ caracteres, una mayúscula y un número."}, status=400)
 
-        user = User.objects.create_user(username=correo, email=correo, password=password)
+        user = User.objects.create_user(username=correo, email=correo, password=password, is_active=False)
         Perfil.objects.create(user=user, nombre_completo=nombre_completo)
 
-        return Response({"mensaje": "Cuenta creada correctamente."}, status=201)
+        return Response({"mensaje": "Cuenta creada. Un administrador debe aprobarla antes de que puedas entrar."}, status=201)
 
 
 class LoginConLimiteView(APIView):
@@ -84,6 +89,14 @@ class LoginConLimiteView(APIView):
             return Response(
                 {"error": "Demasiados intentos fallidos. Espera 15 minutos antes de volver a intentar."},
                 status=429,
+            )
+
+        # Cuenta pendiente de aprobación (o desactivada): se avisa solo si la contraseña es correcta, para no revelar qué cuentas existen.
+        candidato = User.objects.filter(username=username).first()
+        if candidato is not None and not candidato.is_active and candidato.check_password(password):
+            return Response(
+                {"error": "Tu cuenta aún no está activa. Un administrador debe aprobarla antes de que puedas entrar."},
+                status=403,
             )
 
         user = authenticate(username=username, password=password)
